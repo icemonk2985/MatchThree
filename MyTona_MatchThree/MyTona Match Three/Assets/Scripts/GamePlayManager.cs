@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//Personal Enum
+public enum TileTypes { WhiteCircle, RedSquare, YellowKite, OrangeHexagon, GreenOctogon, BlueDiamond, PurpleTriangle }
+
 public class GamePlayManager : MonoBehaviour
 {
+    //Instance Variable
     public static GamePlayManager instance;
-
-    public enum TileTypes {WhiteCircle, RedSquare, YellowKite, OrangeHexagon, GreenOctogon, BlueDiamond, PurpleTriangle}
-    
+           
     private void Awake()
     {
         if (instance == null)
@@ -20,17 +22,13 @@ public class GamePlayManager : MonoBehaviour
             instance = null;
     }
 
-    void Start () {
-		
+    void Start ()
+    {
+        Cursor.lockState = CursorLockMode.Confined;	
 	}
 	
-	void Update () {
-		
-	}
-
     public Sprite TileSpriteChange(TileTypes _tiletype)
     {
-        Sprite spr_Temp = null;
-        return spr_Temp;
+        return Resources.Load<Sprite>(_tiletype.ToString());
     }
 }
