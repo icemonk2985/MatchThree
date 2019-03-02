@@ -5,6 +5,7 @@ using UnityEngine;
 public class Game_Tile : MonoBehaviour
 {
     //Basic Variable Types
+    public bool b_ChangeTile = false;
     private bool b_TileHeld = false;
     private float f_DragAngle = 0.0f;
 
@@ -15,12 +16,7 @@ public class Game_Tile : MonoBehaviour
 
     //Personal Variable Types
     public TileTypes Tile;
-
-    private void Start()
-    {
-        SetUp();
-    }
-
+    
     private void Update()
     {
         if (b_TileHeld)
@@ -30,9 +26,9 @@ public class Game_Tile : MonoBehaviour
         }        
     }
 
-    private void SetUp()
+    public void SetUp()
     {
-        Tile = (TileTypes)Random.Range(0, 7);
+        Tile = (TileTypes)Random.Range(1, 8);
         GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(Tile);
         vec_TilePosition = transform.position;
         return;
@@ -41,8 +37,11 @@ public class Game_Tile : MonoBehaviour
     private void OnMouseDown()
     {
         b_TileHeld = true;
+
         GetComponent<BoxCollider2D>().enabled = false;
+
         vec_FirstTileClickedPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
         return;
     }
 
@@ -56,19 +55,14 @@ public class Game_Tile : MonoBehaviour
 
         FindDragDirection();
 
-        if (transform.position.x > vec_TilePosition.x + 1 ||
-            transform.position.x < vec_TilePosition.x - 1 ||
-            transform.position.y > vec_TilePosition.y + 1 ||
-            transform.position.y < vec_TilePosition.y - 1)
+        Game_Board.instance.MoveTiles(this, f_DragAngle);
+
+        if (!Game_Board.instance.CheckValidMove())
         {
-            Game_Board.instance.MoveTiles(this, f_DragAngle);
-            
-            transform.position = vec_TilePosition;
+            Game_Board.instance.MoveTiles(this, (f_DragAngle));
         }
-        else//*/
-        {
-            transform.position = vec_TilePosition;
-        }
+
+        transform.position = vec_TilePosition;
 
         Game_Board.instance.GetBackgroundArray((int)vec_TilePosition.x / 2, (int)vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileSprite");
 
@@ -78,7 +72,6 @@ public class Game_Tile : MonoBehaviour
     private void FindDragDirection()
     {
         f_DragAngle = Mathf.Atan2(vec_FinalTileClickedPosition.y - vec_FirstTileClickedPosition.y, vec_FinalTileClickedPosition.x - vec_FirstTileClickedPosition.x) * 180f / Mathf.PI;
-        Debug.Log(f_DragAngle);
         return;
     }
 
@@ -94,3 +87,47 @@ public class Game_Tile : MonoBehaviour
         return;
     }
 }
+
+/*
+ arr_GameBoardTiles[k, j].Tile = TileTypes.Null;
+
+                        if ((l + j) == (i_GameBoardHeight - 1))
+                        {
+                            TileTypes _tile;
+                            do
+                            {
+                                _tile = (TileTypes)Random.Range(1, 8);
+                            } while (arr_GameBoardTiles[k, l + j].Tile == _tile);
+                            arr_GameBoardTiles[k, l + j].Tile = _tile;
+                        }
+                        else
+                        {
+                            if (arr_GameBoardTiles[k, j + 1].Tile == TileTypes.Null || arr_GameBoardTiles[k, j + 1].b_ChangeTile)
+                            {
+                                arr_GameBoardTiles[k, j].Tile = (TileTypes)Random.Range(1, 8);
+                                Debug.Log(arr_GameBoardTiles[k, j].name + ": " + arr_GameBoardTiles[k, j].Tile);
+                            }
+                            else
+                            {
+                                Debug.Log(arr_GameBoardTiles[k, j].name + ": " + arr_GameBoardTiles[k, j].Tile);
+                                Debug.Log(arr_GameBoardTiles[k, j + 1].name + ": " + arr_GameBoardTiles[k, j + 1].Tile);
+                                arr_GameBoardTiles[k, j].Tile = arr_GameBoardTiles[k, j + 1].Tile;
+                                arr_GameBoardTiles[k, j + 1].Tile = TileTypes.Null;
+                                Debug.Log(arr_GameBoardTiles[k, j].name + ": " + arr_GameBoardTiles[k, j].Tile);
+                                Debug.Log(arr_GameBoardTiles[k, j + 1].name + ": " + arr_GameBoardTiles[k, j + 1].Tile);
+                            }//
+                            for (int m = 0; (l + j + m) < i_GameBoardHeight; m++)
+                            {
+                                if (arr_GameBoardTiles[k, l + j + m].Tile != TileTypes.Null)
+                                {
+                                    arr_GameBoardTiles[k, l + j].Tile = arr_GameBoardTiles[k, l + j + m].Tile;
+                                    arr_GameBoardTiles[k, l + j + m].Tile = TileTypes.Null;
+                                }
+                            }
+
+                            if (arr_GameBoardTiles[k, l + j].Tile == TileTypes.Null)
+                            {
+                                arr_GameBoardTiles[k, l + j].Tile = (TileTypes) Random.Range(1, 8);
+                            }
+                        }
+     */

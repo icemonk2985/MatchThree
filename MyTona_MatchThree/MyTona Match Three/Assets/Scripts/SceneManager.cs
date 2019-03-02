@@ -18,12 +18,12 @@ public class SceneManager : MonoBehaviour
         if (instance == this)
             instance = null;
     }
-
+    /*
     void Start () {
 		
 	}
 	
 	void Update () {
 		
-	}
+	}//*/
 }
