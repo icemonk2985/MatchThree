@@ -6,6 +6,7 @@ public class Game_Tile : MonoBehaviour
 {
     //Basic Variable Types
     public bool b_ChangeTile = false;
+    public bool b_PossibleMatch = false;
     private bool b_TileHeld = false;
     private float f_DragAngle = 0.0f;
 
