@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/MenuScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Scenes/LimtedMoves.unity
+    guid: 977e7aeacd6cf734dab3d1927fb89570
+  - enabled: 1
+    path: Assets/Scenes/LimitedTime.unity
+    guid: b5f523c8c210aca44ad8f6d0e65936ec
+  - enabled: 1
+    path: Assets/Scenes/FreePlay.unity
+    guid: 2a4f58c510a4ecd42a22bd784c385fac
   m_configObjects: {}

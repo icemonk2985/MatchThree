@@ -34,39 +34,54 @@ public class Game_Board : MonoBehaviour
             instance = null;
     }
 
-    void Start()
+    private void Start()
     {
         SetUp();
     }
 
     private void Update()
     {
-        if (CheckForMatches())
+        if (!(GamePlayManager.instance.b_GamePaused))
         {
-            Debug.Log("CheckForMatches returned true");
-            IncreaseScore();
-            StartCoroutine(FallingTiles());
-        }
-        else
-        {
-            f_Wait += Time.deltaTime;
-
-            if (f_Wait > 5f)
+            if (GamePlayManager.instance.b_LimitedMoves)
             {
-                if (FindPossibleMatches())
+                if (GamePlayManager.instance.i_MovesUsed >= 25)
                 {
-                    Debug.Log("Giving hints");
-                    GiveHint();
+                    GamePlayManager.instance.GameOver();
                 }
-                else
+            }
+            if (GamePlayManager.instance.b_LimitedTime)
+            {
+                if (GamePlayManager.instance.f_TimeLeft < 0f)
                 {
-                    if (!b_Wait)
+                    GamePlayManager.instance.GameOver();
+                }
+                GamePlayManager.instance.f_TimeLeft -= Time.deltaTime;
+            }
+            if (CheckForMatches())
+            {
+                IncreaseScore();
+                StartCoroutine(FallingTiles());
+            }
+            else
+            {
+                f_Wait += Time.deltaTime;
+
+                if (f_Wait > 5f)
+                {
+                    if (FindPossibleMatches())
                     {
-                        Debug.Log("Calling Remove Deadlock");
-                        StartCoroutine(RemoveDeadlock());
+                        GiveHint();
                     }
+                    else
+                    {
+                        if (!b_Wait)
+                        {
+                            StartCoroutine(RemoveDeadlock());
+                        }
+                    }
+                    f_Wait = 0.0f;
                 }
-                f_Wait = 0.0f;
             }
         }
     }
@@ -112,10 +127,36 @@ public class Game_Board : MonoBehaviour
 
         return;
     }
-
-    public GameObject GetBackgroundArray(int _i, int _j)
+    
+    private void IncreaseScore()
     {
-        return arr_BackgroundTiles[_i, _j];
+        GamePlayManager.instance.i_Score += i_ScoreMultiplier * 100;
+        if (GamePlayManager.instance.b_LimitedTime)
+        {
+            GamePlayManager.instance.f_TimeLeft += 1f * i_ScoreMultiplier;
+        }
+
+        i_ScoreMultiplier = 0;
+
+        return;
+    }
+
+    private void GiveHint()
+    {
+        for (int i = 0; i < i_GameBoardWidth; ++i)
+        {
+            for (int j = 0; j < i_GameBoardHeight; ++j)
+            {
+                int[] arr_IntArr = FindHintTile(i, j);
+                if (arr_IntArr.Length != 0)
+                {
+                    GetBackgroundArray((int)arr_GameBoardTiles[arr_IntArr[0], arr_IntArr[1]].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[arr_IntArr[0], arr_IntArr[1]].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileHighlightedSprite");
+                    GetBackgroundArray((int)arr_GameBoardTiles[arr_IntArr[2], arr_IntArr[3]].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[arr_IntArr[2], arr_IntArr[3]].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileHighlightedSprite");
+                    GetBackgroundArray((int)arr_GameBoardTiles[arr_IntArr[4], arr_IntArr[5]].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[arr_IntArr[4], arr_IntArr[5]].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileHighlightedSprite");
+                    return;
+                }
+            }
+        }
     }
 
     public void MoveTiles(Game_Tile _Tile, float _angle)
@@ -186,569 +227,7 @@ public class Game_Board : MonoBehaviour
         }
     }
 
-    public bool CheckForMatches()
-    {
-        bool b_IsThereAMatch = false;
-
-        //Checking to see if it is a valid match
-        for (int i = 0; i < i_GameBoardWidth; ++i)
-        {
-            for (int j = 0; j < i_GameBoardHeight; ++j)
-            {
-                //Two sets of If/Else If/Else sets - one for i, one for j
-                //Each checks the value and only performs the calculations of matches that will not cause an out-of-bounds error
-
-                //Check Rows
-                if ((i + 2) < i_GameBoardWidth)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i + 2, j].b_ChangeTile = true;
-                    }
-                }
-                if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                    }
-                }
-                if ((i - 2) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i - 2, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                    }
-                }
-
-                //Check Columns
-                if ((j + 2) < i_GameBoardHeight)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                    }
-                }
-                if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                    }
-                }
-                if ((j - 2) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
-                        arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                    }
-                }
-
-                /*Switch Statments, remove when unneeded*/
-                {
-                    /*
-                    //Check rows
-                    switch (i)
-                    {
-                        case 0: // +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + i + ", " + l + "), (" + (i + 1) + ", " + l + "), (" + (i + 2) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 2, j].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 1: // +1/-1, +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + (k + 1) + ", " + l + "), (" + (k + 2) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 2, j].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 1) + ", " + l + "), (" + k + ", " + l + "), (" + (k + 1) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 2: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + (k + 1) + ", " + l + "), (" + (k + 2) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 2, j].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 1) + ", " + l + "), (" + k + ", " + l + "), (" + (k + 1) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 2) + ", " + l + "), (" + (k - 1) + ", " + l + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 2, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 3: // +1/-1, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 1) + ", " + l + "), (" + k + ", " + l + "), (" + (k + 1) + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 2) + ", " + l + "), (" + (k - 1) + ", " + l + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 2, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 4: // -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + (k - 2) + ", " + l + "), (" + (k - 1) + ", " + l + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 2, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                return b_IsThereAMatch;
-                            }
-                    }
-
-                    //Check columns
-                    switch (j)
-                    {
-                        case 0: // +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + k + ", " + (l + 1) + "), (" + k + ", " + (l + 2) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 1: // +1/-1, +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + k + ", " + (l + 1) + "), (" + k + ", " + (l + 2) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 1) + "), (" + k + ", " + l + "), (" + k + ", " + (l + 1) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 2: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + k + ", " + (l + 1) + "), (" + k + ", " + (l + 2) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 1) + "), (" + k + ", " + l + "), (" + k + ", " + (l + 1) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 2) + "), (" + k + ", " + (l - 1) + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 3: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + l + "), (" + k + ", " + (l + 1) + "), (" + k + ", " + (l + 2) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 1) + "), (" + k + ", " + l + "), (" + k + ", " + (l + 1) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 2) + "), (" + k + ", " + (l - 1) + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 4: // +1/-1, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 1) + "), (" + k + ", " + l + "), (" + k + ", " + (l + 1) + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 2) + "), (" + k + ", " + (l - 1) + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        case 5: // -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    //Debug.Log("Match found at: (" + k + ", " + (l - 2) + "), (" + k + ", " + (l - 1) + "), (" + k + ", " + l + ")");
-                                    arr_GameBoardTiles[i, j].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
-                                    arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                return b_IsThereAMatch;
-                            }
-                    }
-                    //*/
-                }
-
-                if (arr_GameBoardTiles[i, j].b_ChangeTile)
-                {
-                    b_IsThereAMatch = true;
-                    i_ScoreMultiplier++;
-                    arr_GameBoardTiles[i, j].Tile = TileTypes.Null;
-                    arr_GameBoardTiles[i, j].b_ChangeTile = false;
-                }
-
-                arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
-            }
-        }
-
-        return b_IsThereAMatch;
-    }
-
-    public bool CheckValidMove()
-    {
-        //Checking to see if it is a valid move
-        for (int i = 0; i < i_GameBoardWidth; ++i)
-        {
-            for (int j = 0; j < i_GameBoardHeight; ++j)
-            {
-                //Two sets of If/Else If/Else sets - one for i, one for j
-                //Each checks the value and only performs the calculations of matches that will not cause an out-of-bounds error
-
-                //Check rows
-                if ((i + 2) < i_GameBoardWidth)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-                if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-                if ((i - 2) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-
-                //Check Columns
-                if ((j + 2) < i_GameBoardHeight)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-                if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-                if ((j - 2) >= 0)
-                {
-                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                    {
-                        return true;
-                    }
-                }
-
-                /*Switch Statements, Remove when unneeded*/
-                {
-                    /*
-                    switch (i)
-                    {
-                        case 0: // +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 1: // +1/-1, +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 2: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 3: // +1/-1, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 4: // -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                return false;
-                            }
-                    }
-
-                    //Check columns
-                    switch (j)
-                    {
-                        case 0: // +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 1: // +1/-1, +2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 2: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 3: // +1/-1, +2, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 4: // +1/-1, -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                else if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        case 5: // -2
-                            {
-                                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
-                                {
-                                    return true;
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                return false;
-                            }
-                    }
-                    //*/
-                }
-            }
-        }
-
-        //If we reach this, default to false
-        return false;
-    }
-
-    public void IncreaseScore()
-    {
-        GamePlayManager.instance.i_Score += i_ScoreMultiplier * 100;
-
-        i_ScoreMultiplier = 0;
-
-        return;
-    }
-
-    IEnumerator FallingTiles()
-    {
-        b_Wait = true;
-        for (int j = 0; j < i_GameBoardHeight; ++j)
-        {
-            for (int i = 0; i < i_GameBoardWidth; ++i)
-            {
-                GetBackgroundArray((int)arr_GameBoardTiles[i, j].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[i, j].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileSprite");
-                arr_GameBoardTiles[i, j].b_PossibleMatch = false;
-
-                if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
-                {
-                    for (int k = 0; (k + j) < i_GameBoardHeight; ++k)
-                    {
-                        arr_GameBoardTiles[i, j].Tile = arr_GameBoardTiles[i, j + k].Tile;
-                        arr_GameBoardTiles[i, j + k].Tile = TileTypes.Null;
-
-                        if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
-                        {
-                            arr_GameBoardTiles[i, j].Tile = (TileTypes)Random.Range(1, 8);
-                            arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
-                        }
-                        else
-                        {
-                            arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
-                            break;
-                        }
-                    }
-
-                    if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
-                    {
-                        arr_GameBoardTiles[i, j].Tile = (TileTypes)Random.Range(1, 8);
-                        arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
-                    }
-                }
-            }
-            yield return new WaitForSeconds(0.25f);
-        }
-        b_Wait = false;
-        yield return 0;
-    }
-
-    public bool FindPossibleMatches()
+    private bool FindPossibleMatches()
     {
         bool b_IsThereAMatch = false;
         //Checking to see if it is a valid match
@@ -938,27 +417,364 @@ public class Game_Board : MonoBehaviour
         return b_IsThereAMatch;
     }
 
-    public void GiveHint()
+    public bool CheckForMatches()
     {
-        int i_HintCounter = 0;
-        TileTypes _FirstMatch = TileTypes.Null;
+        bool b_IsThereAMatch = false;
 
+        //Checking to see if it is a valid match
         for (int i = 0; i < i_GameBoardWidth; ++i)
         {
             for (int j = 0; j < i_GameBoardHeight; ++j)
             {
-                if (i_HintCounter == 0 && arr_GameBoardTiles[i, j].b_PossibleMatch)
+                //Two sets of If/Else If/Else sets - one for i, one for j
+                //Each checks the value and only performs the calculations of matches that will not cause an out-of-bounds error
+
+                //Check Rows
+                if ((i + 2) < i_GameBoardWidth)
                 {
-                    _FirstMatch = arr_GameBoardTiles[i, j].Tile;
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i + 2, j].b_ChangeTile = true;
+                    }
+                }
+                if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i + 1, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
+                    }
+                }
+                if ((i - 2) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i - 2, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i - 1, j].b_ChangeTile = true;
+                    }
                 }
 
-                if (arr_GameBoardTiles[i, j].Tile == _FirstMatch && arr_GameBoardTiles[i, j].b_PossibleMatch && i_HintCounter < 3)
+                //Check Columns
+                if ((j + 2) < i_GameBoardHeight)
                 {
-                    i_HintCounter++;
-                    GetBackgroundArray((int)arr_GameBoardTiles[i, j].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[i, j].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileHighlightedSprite");
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j + 2].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
+                    }
+                }
+                if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j + 1].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
+                    }
+                }
+                if ((j - 2) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j - 2].b_ChangeTile = true;
+                        arr_GameBoardTiles[i, j - 1].b_ChangeTile = true;
+                    }
+                }
+
+                if (arr_GameBoardTiles[i, j].b_ChangeTile)
+                {
+                    b_IsThereAMatch = true;
+                    i_ScoreMultiplier++;
+                    arr_GameBoardTiles[i, j].Tile = TileTypes.Null;
+                    arr_GameBoardTiles[i, j].b_ChangeTile = false;
+                }
+
+                arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
+            }
+        }
+
+        return b_IsThereAMatch;
+    }
+
+    public bool CheckValidMove()
+    {
+        //Checking to see if it is a valid move
+        for (int i = 0; i < i_GameBoardWidth; ++i)
+        {
+            for (int j = 0; j < i_GameBoardHeight; ++j)
+            {
+                //Two sets of If/Else If/Else sets - one for i, one for j
+                //Each checks the value and only performs the calculations of matches that will not cause an out-of-bounds error
+
+                //Check rows
+                if ((i + 2) < i_GameBoardWidth)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
+                }
+                if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
+                }
+                if ((i - 2) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
+                }
+
+                //Check Columns
+                if ((j + 2) < i_GameBoardHeight)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
+                }
+                if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
+                }
+                if ((j - 2) >= 0)
+                {
+                    if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                    {
+                        return true;
+                    }
                 }
             }
         }
+
+        //If we reach this, default to false
+        return false;
+    }
+
+    private int[] FindHintTile(int i, int j)
+    {
+        int[] arr_ReturnArray = new int[6];
+        //Checking to see if it is a valid match
+
+        //Two sets of If/Else If/Else sets with nested If staments in them - one for i, one for j
+        //Each checks the value and only performs the calculations of matches that will not cause an out-of-bounds error
+        //We first check the opposite value - i when checking columns, j when checking rows - so we know if we can move up/down or left/right for a full check
+        //We can do our final checks in the "Else" because that represents i or j + 0
+
+        //Check Rows
+        if ((j + 1) < i_GameBoardHeight)
+        {
+            if ((i + 2) < i_GameBoardWidth)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j + 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j + 1, i + 2, j + 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j + 1, i - 1, j + 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((i - 2) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j + 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 1, j + 1, i - 2, j + 1 };
+                    return arr_ReturnArray;
+                }
+            }
+        }
+        if ((j - 1) >= 0)
+        {
+            if ((i + 2) < i_GameBoardWidth)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j - 1, i + 2, j - 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((i + 1) < i_GameBoardWidth && (i - 1) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j - 1, i - 1, j - 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((i - 2) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 1, j - 1, i - 2, j - 1 };
+                    return arr_ReturnArray;
+                }
+            }
+        }
+        // j + 0
+        {
+            if ((i + 3) < i_GameBoardWidth)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 3, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 3, j, i + 2, j};
+                    return arr_ReturnArray;
+                }
+            }
+            if ((i - 3) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 3, j].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 2, j].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 3, j, i - 2, j};
+                    return arr_ReturnArray;
+                }
+            }
+        }
+
+        //Check Columns
+        if ((i + 1) < i_GameBoardWidth)
+        {
+            if ((j + 2) < i_GameBoardHeight)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j + 1, i + 1, j + 2 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j + 1, i + 1, j - 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((j - 2) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i + 1, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i + 1, j - 1, i + 1, j - 2 };
+                    return arr_ReturnArray;
+                }
+            }
+        }
+        if ((i - 1) >= 0)
+        {
+            if ((j + 2) < i_GameBoardHeight)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j + 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 1, j + 1, i - 1, j + 2 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((j + 1) < i_GameBoardHeight && (j - 1) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j + 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 1, j + 1, i - 1, j - 1 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((j - 2) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j - 1].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i - 1, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i - 1, j - 1, i - 1, j - 2 };
+                    return arr_ReturnArray;
+                }
+            }
+        }
+        // i + 0
+        {
+            if ((j + 3) < i_GameBoardWidth)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 2].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j + 3].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i, j + 3, i, j + 2 };
+                    return arr_ReturnArray;
+                }
+            }
+            if ((j - 3) >= 0)
+            {
+                if (arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 3].Tile && arr_GameBoardTiles[i, j].Tile == arr_GameBoardTiles[i, j - 2].Tile && arr_GameBoardTiles[i, j].Tile != TileTypes.Null)
+                {
+                    arr_ReturnArray = new int[6] { i, j, i, j - 3, i, j - 2 };
+                    return arr_ReturnArray;
+                }
+            }
+
+        }
+
+        return new int[] {};
+    }
+
+    public GameObject GetBackgroundArray(int _i, int _j)
+    {
+        return arr_BackgroundTiles[_i, _j];
+    }
+    
+    IEnumerator FallingTiles()
+    {
+        f_Wait = 0.0f;
+        b_Wait = true;
+        for (int j = 0; j < i_GameBoardHeight; ++j)
+        {
+            for (int i = 0; i < i_GameBoardWidth; ++i)
+            {
+                GetBackgroundArray((int)arr_GameBoardTiles[i, j].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[i, j].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileSprite");
+                arr_GameBoardTiles[i, j].b_PossibleMatch = false;
+
+                if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
+                {
+                    for (int k = 0; (k + j) < i_GameBoardHeight; ++k)
+                    {
+                        arr_GameBoardTiles[i, j].Tile = arr_GameBoardTiles[i, j + k].Tile;
+                        arr_GameBoardTiles[i, j + k].Tile = TileTypes.Null;
+
+                        if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
+                        {
+                            arr_GameBoardTiles[i, j].Tile = (TileTypes)Random.Range(1, 8);
+                            arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
+                        }
+                        else
+                        {
+                            arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
+                            break;
+                        }
+                    }
+
+                    if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
+                    {
+                        arr_GameBoardTiles[i, j].Tile = (TileTypes)Random.Range(1, 8);
+                        arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
+                    }
+                }
+            }
+            yield return new WaitForSeconds(0.25f);
+        }
+        b_Wait = false;
+        f_Wait = -1.0f;
+        yield return 0;
     }
 
     IEnumerator RemoveDeadlock()
@@ -975,13 +791,10 @@ public class Game_Board : MonoBehaviour
 
         List<TileTypes> arr_TempTiles = new List<TileTypes>();
 
-        Debug.Log("Called Remove Deadlock");
-
         for (int i = 0; i < i_GameBoardWidth; ++i)
         {
             for (int j = 0; j < i_GameBoardHeight; ++j)
             {
-                Debug.Log(i * i_GameBoardHeight + j);
                 if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
                 {
                     arr_TempTiles.Add((TileTypes)Random.Range(1, 8));
@@ -993,8 +806,6 @@ public class Game_Board : MonoBehaviour
                 }
             }
         }
-
-        Debug.Log("List filled board clear");
 
         {
             /*List<TileTypes> arr_TempTilesUnsorted = arr_TempTiles;
@@ -1062,7 +873,6 @@ public class Game_Board : MonoBehaviour
         List<TileTypes> arr_TempTilesBackUp = arr_TempTiles;
         do
         {
-            Debug.Log("Making a match");
             arr_TempTiles = arr_TempTilesBackUp;
             for (int i = 0; i < i_GameBoardWidth; ++i)
             {
