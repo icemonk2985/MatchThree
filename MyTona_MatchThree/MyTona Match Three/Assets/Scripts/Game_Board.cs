@@ -17,10 +17,12 @@ public class Game_Board : MonoBehaviour
     //Advanced Variable Types
     [SerializeField] GameObject go_BackgroundTilePrefab;
     [SerializeField] GameObject go_TilePrefab;
+    [SerializeField] GameObject go_TileToCollect;
     private GameObject[,] arr_BackgroundTiles;
 
     //Personal Variable Types
     private Game_Tile[,] arr_GameBoardTiles;
+    private TileTypes tile_TileToCollect;
 
     private void Awake()
     {
@@ -91,7 +93,7 @@ public class Game_Board : MonoBehaviour
         arr_BackgroundTiles = new GameObject[i_GameBoardWidth, i_GameBoardHeight];
         arr_GameBoardTiles = new Game_Tile[i_GameBoardWidth, i_GameBoardHeight];
 
-        //This for loop sets up the game board, creating a 5x6 board
+        //This for loop sets up the game board, creating a _Width*_Height board
         for (int i = 0; i < i_GameBoardWidth; ++i)
         {
             for (int j = 0; j < i_GameBoardHeight; ++j)
@@ -123,6 +125,12 @@ public class Game_Board : MonoBehaviour
                     arr_GameBoardTiles[i, j].GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(arr_GameBoardTiles[i, j].Tile);
                 }
             }
+        }
+
+        if (GamePlayManager.instance.b_CollectTiles)
+        {
+            tile_TileToCollect = (TileTypes)Random.Range(1, 8);
+            go_TileToCollect.GetComponent<SpriteRenderer>().sprite = GamePlayManager.instance.TileSpriteChange(tile_TileToCollect);
         }
 
         return;
@@ -491,6 +499,12 @@ public class Game_Board : MonoBehaviour
                 {
                     b_IsThereAMatch = true;
                     i_ScoreMultiplier++;
+
+                    if (GamePlayManager.instance.b_CollectTiles && arr_GameBoardTiles[i, j].Tile == tile_TileToCollect)
+                    {
+                        GamePlayManager.instance.i_TilesCollected++;
+                    }
+
                     arr_GameBoardTiles[i, j].Tile = TileTypes.Null;
                     arr_GameBoardTiles[i, j].b_ChangeTile = false;
                 }
@@ -743,6 +757,7 @@ public class Game_Board : MonoBehaviour
             {
                 GetBackgroundArray((int)arr_GameBoardTiles[i, j].vec_TilePosition.x / 2, (int)arr_GameBoardTiles[i, j].vec_TilePosition.y / 2).GetComponent<SpriteRenderer>().sprite = Resources.Load<Sprite>("BackgroundTileSprite");
                 arr_GameBoardTiles[i, j].b_PossibleMatch = false;
+                arr_GameBoardTiles[i, j].b_ChangeTile = false;
 
                 if (arr_GameBoardTiles[i, j].Tile == TileTypes.Null)
                 {

@@ -59,6 +59,16 @@ public class GameSceneManager : MonoBehaviour
         Application.Quit();
     }
 
+    public void LoadTileCollectLimitedMoves()
+    {
+        LoadThisScene("TileCollectLimitedMoves");
+    }
+
+    public void LoadTileCollectLimitedTime()
+    {
+        LoadThisScene("TileCollectLimitedTime");
+    }
+
     public void LoadLimitedMoves()
     {
         LoadThisScene("LimitedMoves");

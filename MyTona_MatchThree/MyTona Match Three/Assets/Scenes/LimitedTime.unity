@@ -600,7 +600,7 @@ RectTransform:
   m_GameObject: {fileID: 691660084}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 1}
+  m_LocalScale: {x: 11, y: 10, z: 1}
   m_Children:
   - {fileID: 1579201563}
   m_Father: {fileID: 730157466}
@@ -914,6 +914,7 @@ MonoBehaviour:
     type: 2}
   go_TilePrefab: {fileID: 1896220339472798, guid: ec434e9b90481c8439a5da720ddcc1c6,
     type: 2}
+  go_TileToCollect: {fileID: 0}
 --- !u!212 &926442022
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -990,12 +991,15 @@ MonoBehaviour:
   b_GamePaused: 0
   b_LimitedMoves: 0
   b_LimitedTime: 1
+  b_CollectTiles: 0
   i_Score: 0
   i_MovesUsed: 0
+  i_TilesCollected: 0
   f_TimeLeft: 0
   tmp_ScoreText: {fileID: 1543040218}
   tmp_MovesText: {fileID: 0}
   tmp_TimeText: {fileID: 1082201150}
+  tmp_TileText: {fileID: 0}
   tmp_SoundText: {fileID: 477130987}
   go_PauseMenu: {fileID: 1721844141}
   go_GameOver: {fileID: 691660084}
@@ -1124,7 +1128,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -600, y: -165}
+  m_AnchoredPosition: {x: -600, y: -200}
   m_SizeDelta: {x: 200, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1082201150

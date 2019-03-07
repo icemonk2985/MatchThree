@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/Scenes/MenuScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
   - enabled: 1
-    path: Assets/Scenes/LimtedMoves.unity
+    path: Assets/Scenes/LimitedMoves.unity
     guid: 977e7aeacd6cf734dab3d1927fb89570
   - enabled: 1
     path: Assets/Scenes/LimitedTime.unity
@@ -17,4 +17,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FreePlay.unity
     guid: 2a4f58c510a4ecd42a22bd784c385fac
+  - enabled: 1
+    path: Assets/Scenes/TileCollectLimitedMoves.unity
+    guid: 4694363f8ac1d0046bdf2e87773da356
+  - enabled: 1
+    path: Assets/Scenes/TileCollectLimitedTime.unity
+    guid: 96e5f352e3670bb449b2d117b5410f50
   m_configObjects: {}

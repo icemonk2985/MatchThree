@@ -612,6 +612,7 @@ MonoBehaviour:
     type: 2}
   go_TilePrefab: {fileID: 1896220339472798, guid: ec434e9b90481c8439a5da720ddcc1c6,
     type: 2}
+  go_TileToCollect: {fileID: 0}
 --- !u!212 &371720055
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -776,13 +777,17 @@ MonoBehaviour:
   b_GamePaused: 0
   b_LimitedMoves: 0
   b_LimitedTime: 0
+  b_CollectTiles: 0
   i_Score: 0
   i_MovesUsed: 0
+  i_TilesCollected: 0
   f_TimeLeft: 60
   tmp_ScoreText: {fileID: 739771394}
   tmp_MovesText: {fileID: 0}
   tmp_TimeText: {fileID: 0}
+  tmp_TileText: {fileID: 0}
   tmp_SoundText: {fileID: 1471742173}
+  tmp_HighScoreText: {fileID: 0}
   go_PauseMenu: {fileID: 777460537}
   go_GameOver: {fileID: 0}
 --- !u!1 &739771393
