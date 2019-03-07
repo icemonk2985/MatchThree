@@ -86,7 +86,7 @@ public class GamePlayManager : MonoBehaviour
     public void PauseMenu()
     {
         go_PauseMenu.SetActive(!(go_PauseMenu.activeSelf));
-        b_GamePaused = go_PauseMenu.activeSelf;        
+        b_GamePaused = go_PauseMenu.activeSelf;
         return;
     }
 
@@ -119,8 +119,6 @@ public class GamePlayManager : MonoBehaviour
                     using (StreamReader sr = new StreamReader(path))
                     {
                         _score = int.Parse(sr.ReadLine());
-                        Debug.Log(_score);
-                        Debug.Log(i_Score);
                     }
                     if (i_Score > _score)
                     {
@@ -138,8 +136,6 @@ public class GamePlayManager : MonoBehaviour
                     using (StreamReader sr = new StreamReader(path))
                     {
                         _score = int.Parse(sr.ReadLine());
-                        Debug.Log(_score);
-                        Debug.Log(i_Score);
                     }
                     if (i_Score > _score)
                     {
@@ -160,8 +156,6 @@ public class GamePlayManager : MonoBehaviour
                     using (StreamReader sr = new StreamReader(path))
                     {
                         _score = int.Parse(sr.ReadLine());
-                        Debug.Log(_score);
-                        Debug.Log(i_Score);
                     }
                     if (i_Score > _score)
                     {
@@ -179,8 +173,6 @@ public class GamePlayManager : MonoBehaviour
                     using (StreamReader sr = new StreamReader(path))
                     {
                         _score = int.Parse(sr.ReadLine());
-                        Debug.Log(_score);
-                        Debug.Log(i_Score);
                     }
                     if (i_Score > _score)
                     {
@@ -198,8 +190,6 @@ public class GamePlayManager : MonoBehaviour
                     using (StreamReader sr = new StreamReader(path))
                     {
                         _score = int.Parse(sr.ReadLine());
-                        Debug.Log(_score);
-                        Debug.Log(i_Score);
                     }
                     if (i_Score > _score)
                     {
@@ -222,5 +212,26 @@ public class GamePlayManager : MonoBehaviour
             }
         }
         GameSceneManager.instance.GameOverDelay();
+    }
+
+    public void QuitGame()
+    {
+        if (!b_LimitedTime && !b_CollectTiles && !b_LimitedMoves)
+        {
+            int _score;
+            string path = Path.Combine(Application.streamingAssetsPath, "FP.txt");
+            using (StreamReader sr = new StreamReader(path))
+            {
+                _score = int.Parse(sr.ReadLine());
+            }
+            if (i_Score > _score)
+            {
+                using (StreamWriter wr = new StreamWriter(path))
+                {
+                    wr.WriteLine(i_Score);
+                }
+            }
+        }
+        GameSceneManager.instance.GameOverImmediate();
     }
 }

@@ -517,8 +517,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 31769312}
-        m_MethodName: GameOverImmediate
+      - m_Target: {fileID: 520865860}
+        m_MethodName: QuitGame
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -787,7 +787,6 @@ MonoBehaviour:
   tmp_TimeText: {fileID: 0}
   tmp_TileText: {fileID: 0}
   tmp_SoundText: {fileID: 1471742173}
-  tmp_HighScoreText: {fileID: 0}
   go_PauseMenu: {fileID: 777460537}
   go_GameOver: {fileID: 0}
 --- !u!1 &739771393
